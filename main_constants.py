@@ -1,0 +1,1 @@
+DB_PATHS = {"tabFirst": "databases/db_first.db"}
