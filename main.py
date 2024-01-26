@@ -5,7 +5,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 from ui_py.ui_main import Ui_MainWindow
 import sqlite3
-from main_constants import DB_PATHS
+from main_constants import DB_PATHS, ICON_PATH
 
 
 def except_hook(cls, exception, traceback):
@@ -68,7 +68,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowIcon(QIcon("icon.png"))
+        self.setWindowIcon(QIcon(ICON_PATH))
 
         self.setupUi(self)
         # uic.loadUi("ui_files/main.ui", self)
