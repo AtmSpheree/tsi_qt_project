@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# The main application script
+# When compiling via py2exe or pyinstaller scripts or just run with python3,
+# it is necessary to specify exactly it
+
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QHeaderView
 from PyQt5 import uic, QtCore
