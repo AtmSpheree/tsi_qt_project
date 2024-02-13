@@ -49,8 +49,15 @@ def sqlite_ignore_case_collation(value1_, value2_):
 class HistoryDataModel(QtCore.QAbstractTableModel):
     def __init__(self):
         super(HistoryDataModel, self).__init__()
-        self.data = [["", ""]]
+        self.data = [["", "", ""]]
         self.horizontal_headers = []
+        self.number = 1
+
+    def get_number(self):
+        return self.number
+
+    def increment_number(self):
+        self.number += 1
 
     # Setting headers - fields from the database for correct display
     def headerData(self, section, orientation, role=Qt.DisplayRole):
@@ -68,7 +75,7 @@ class HistoryDataModel(QtCore.QAbstractTableModel):
 
     # Adding row into table model
     def append_row(self, row):
-        if self.data == [["", ""]]:
+        if self.data == [["", "", ""]]:
             self.data = []
             self.data = [row + self.data]
         else:
@@ -140,35 +147,38 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def set_functional_abilities(self):
         # Setting up the first model of the history data table
         self.tableViewHistoryFirstModel = HistoryDataModel()
-        self.tableViewHistoryFirstModel.set_horizontal_headers(["№", "Термин"])
+        self.tableViewHistoryFirstModel.set_horizontal_headers(["№", "Термин", "Определение"])
         self.tableViewHistoryFirst.setTextElideMode(Qt.ElideMiddle)
         self.tableViewHistoryFirst.setModel(self.tableViewHistoryFirstModel)
         self.tableViewHistoryFirst.horizontalHeader().sectionResized.connect(self.tableViewHistoryFirst.resizeRowsToContents)
         self.tableViewHistoryFirst.setWordWrap(True)
         self.tableViewHistoryFirst.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.tableViewHistoryFirst.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.tableViewHistoryFirst.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.tableViewHistoryFirst.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
 
         # Setting up the second model of the history data table
         self.tableViewHistorySecondModel = HistoryDataModel()
-        self.tableViewHistorySecondModel.set_horizontal_headers(["№", "Термин"])
+        self.tableViewHistorySecondModel.set_horizontal_headers(["№", "Термин", "Определение"])
         self.tableViewHistorySecond.setTextElideMode(Qt.ElideMiddle)
         self.tableViewHistorySecond.setModel(self.tableViewHistorySecondModel)
         self.tableViewHistorySecond.horizontalHeader().sectionResized.connect(
         self.tableViewHistorySecond.resizeRowsToContents)
         self.tableViewHistorySecond.setWordWrap(True)
         self.tableViewHistorySecond.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.tableViewHistorySecond.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.tableViewHistorySecond.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.tableViewHistorySecond.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
 
         # Setting up the third model of the history data table
         self.tableViewHistoryThirdModel = HistoryDataModel()
-        self.tableViewHistoryThirdModel.set_horizontal_headers(["№", "Термин"])
+        self.tableViewHistoryThirdModel.set_horizontal_headers(["№", "Термин", "Определение"])
         self.tableViewHistoryThird.setTextElideMode(Qt.ElideMiddle)
         self.tableViewHistoryThird.setModel(self.tableViewHistoryThirdModel)
         self.tableViewHistoryThird.horizontalHeader().sectionResized.connect(
         self.tableViewHistoryThird.resizeRowsToContents)
         self.tableViewHistoryThird.setWordWrap(True)
         self.tableViewHistoryThird.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.tableViewHistoryThird.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.tableViewHistoryThird.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.tableViewHistoryThird.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
 
         # Connecting the buttons in its corresponding function
         self.pushButtonSearchFirst.clicked.connect(self.push_button_search_clicked)
@@ -182,18 +192,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         order_name = self.tabWidgetMain.currentWidget().objectName()[3:]
         cursor = eval(f"self.db_{order_name.lower()}_connection.cursor()")
         value = eval(f"self.lineEditSearch{self.tabWidgetMain.currentWidget().objectName()[3:]}.text()")
-        query = f'SELECT terms.id, terms.term FROM abstractions JOIN terms ON abstractions.term_id = terms.id ' \
-                f'WHERE LOWER(abstractions.abstraction) = LOWER("{value}")'
-        cursor.execute(query)
+        query = f'SELECT terms.term AS term, terms.short AS short FROM abstractions JOIN terms ON ' \
+                f'abstractions.term_id = terms.id WHERE LOWER(abstractions.abstraction) = LOWER("{value}")'
+        cursor.execute(f"SELECT abstractions.abstraction, Final.term FROM ({query}) AS Final "
+                       f"JOIN abstractions ON abstractions.id = Final.short")
         data = cursor.fetchone()
+        data = (eval(f"self.tableViewHistory{order_name}Model.get_number()"), data[0], data[1])
+        exec(f"self.tableViewHistory{order_name}Model.increment_number()")
         if data is not None:
-            exec(f"self.tableViewHistory{self.tabWidgetMain.currentWidget().objectName()[3:]}"
+            exec(f"self.tableViewHistory{order_name}"
                  f"Model.append_row({list(data)})")
-            exec(f"self.tableViewHistory{self.tabWidgetMain.currentWidget().objectName()[3:]}"
+            exec(f"self.tableViewHistory{order_name}"
                  f".model().layoutChanged.emit()")
-            exec(f"self.tableViewHistory{self.tabWidgetMain.currentWidget().objectName()[3:]}"
+            exec(f"self.tableViewHistory{order_name}"
                  f".resizeRowsToContents()")
-            exec(f'self.textBrowserInfo{order_name}.setText(data[1])')
+            exec(f'self.textBrowserInfo{order_name}.setText(data[2])')
             exec(f'self.labelError{order_name}.setText("")')
         else:
             exec(f'self.labelError{order_name}.setText("Термина с таким названием нет в базе.")')
