@@ -197,9 +197,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         cursor.execute(f"SELECT abstractions.abstraction, Final.term FROM ({query}) AS Final "
                        f"JOIN abstractions ON abstractions.id = Final.short")
         data = cursor.fetchone()
-        data = (eval(f"self.tableViewHistory{order_name}Model.get_number()"), data[0], data[1])
-        exec(f"self.tableViewHistory{order_name}Model.increment_number()")
-        if data is not None:
+        if data is None:
+            exec(f'self.labelError{order_name}.setText("Термина с таким названием нет в базе.")')
+        else:
+            data = (eval(f"self.tableViewHistory{order_name}Model.get_number()"), data[0], data[1])
+            exec(f"self.tableViewHistory{order_name}Model.increment_number()")
             exec(f"self.tableViewHistory{order_name}"
                  f"Model.append_row({list(data)})")
             exec(f"self.tableViewHistory{order_name}"
@@ -208,8 +210,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                  f".resizeRowsToContents()")
             exec(f'self.textBrowserInfo{order_name}.setText(data[2])')
             exec(f'self.labelError{order_name}.setText("")')
-        else:
-            exec(f'self.labelError{order_name}.setText("Термина с таким названием нет в базе.")')
 
     # Setting specific interface settings that QtDesigner does not allow you to implement
     def setup_special_ui(self):
