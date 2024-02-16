@@ -4,10 +4,11 @@
 # it is necessary to specify exactly it
 
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QHeaderView
+from PyQt5.QtWidgets import QApplication, QMainWindow, QHeaderView, QDialog
 from PyQt5 import uic, QtCore
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
+from ui_py.ui_error_dialog import Ui_Dialog
 from ui_py.ui_main import Ui_MainWindow
 import sqlite3
 from main_constants import DB_PATHS, ICON_PATH
@@ -43,6 +44,62 @@ def sqlite_ignore_case_collation(value1_, value2_):
         return -1
     else:
         return 1
+
+
+# Error Dialog object class
+class ErrorDialog(QDialog, Ui_Dialog):
+    def __init__(self, *args, **kwargs):
+        # Initialization of all initial features of the QDialog class
+        # It's a required setting
+        super().__init__(*args, **kwargs)
+
+        # uic.loadUi("ui_files/error_dialog.ui", self)
+        # The command above is used to load the application interface directly from the UI interface file
+        # Avoids compiling the UI file to py using pyuic5 script
+        # It is used exclusively in development to preview the interface design
+        # The production uses a file compiled using the pyuic5 script,
+        # which is imported and connected as an additional class (Ui_Dialog) to this one
+        self.setupUi(self)
+
+        # Uploading various code blocks
+        # Their work is described in more detail below
+        self.set_functional_abilities()
+        self.setup_special_ui()
+
+    # Setting specific interface settings that QtDesigner does not allow you to implement
+    def setup_special_ui(self):
+        pass
+
+    # Functional configuration of PyQt5 components
+    # Enabling event handling of button clicks, etc.
+    def set_functional_abilities(self):
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+    # Setting error in the window title
+    def set_error_window_title(self, text: str = "Error."):
+        self.setWindowTitle(text)
+
+    # Setting error in the main label
+    def set_error_label_text(self, text: str = "Something went wrong!"):
+        self.label.setText(text)
+
+    # Setting text in the ok button
+    def set_ok_button_text(self, text: str = "Ok"):
+        self.buttonBox.button(self.buttonBox.Ok).setText(text)
+
+    # Setting text in the cancel button
+    def set_cancel_button_text(self, text: str = "Cancel"):
+        self.buttonBox.button(self.buttonBox.Cancel).setText(text)
+
+    def set_additional_padding_to_buttons(self, padding: int = 5):
+        # Setting padding in the ok button
+        width = self.buttonBox.button(self.buttonBox.Ok).width()
+        self.buttonBox.button(self.buttonBox.Ok).setFixedWidth(width + padding * 2)
+
+        # Setting padding in the cancel button
+        width = self.buttonBox.button(self.buttonBox.Cancel).width()
+        self.buttonBox.button(self.buttonBox.Cancel).setFixedWidth(width + padding * 2)
 
 
 # PyQT5 Abstract Table Model to represent search history data
@@ -119,28 +176,54 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setup_special_ui()
         self.connect_to_dbs()
 
-    # Connecting to databases using the path specified in the config.json file
+    # Connecting to databases using the path specified in the main_constants.py
+    # exec allows to automate this process
     def connect_to_dbs(self):
-        # Connecting to a first database and configuring the functions necessary
-        # for the correct operation of SQL queries
-        self.db_first_connection = sqlite3.connect(DB_PATHS["tabFirst"])
-        self.db_first_connection.create_function("LOWER", 1, sqlite_lower)
-        self.db_first_connection.create_function("UPPER", 1, sqlite_upper)
-        self.db_first_connection.create_collation("NOCASE", sqlite_ignore_case_collation)
+        for db in DB_PATHS:
+            db_paths = DB_PATHS[db]
+            order_name = db.split('tab')[1].lower()
+            exception = None
+            for path in db_paths:
+                try:
+                    exec(f'self.db_{order_name}_connection = sqlite3.connect(path)')
+                    exec(f'self.db_{order_name}_connection.create_function("LOWER", 1, sqlite_lower)')
+                    exec(f'self.db_{order_name}_connection.create_function("UPPER", 1, sqlite_upper)')
+                    exec(f'self.db_{order_name}_connection.create_collation("NOCASE", sqlite_ignore_case_collation)')
+                except Exception as ex:
+                    exception = ex
+                else:
+                    exception = None
+                    break
+            if exception is not None:
+                break
+        if exception is not None:
+            # Creating error dialog window and configuring it
+            dialog = ErrorDialog(self)
+            dialog.set_error_window_title("Fatal Error.")
+            structure = '{"databases": \n' \
+                        '    [\n' \
+                        '        "db_first.db",\n' \
+                        '        "db_second.db",\n' \
+                        '        "db_third.db"\n' \
+                        '    ]\n' \
+                        '}'
+            dialog.set_error_label_text(f"Ошибка доступа к одной из баз данных:\n"
+                                        f'"{exception.args[0].capitalize()}"\n'
+                                        f"По умолчанию базы данных должны находиться в директории "
+                                        f"databases внутри директории приложения, или на уровень выше.\n"
+                                        f"Изначальная структура:\n"
+                                        f"{structure}\n"
+                                        f"Пожалуйста, укажите пути к директориям вручную.")
+            dialog.set_ok_button_text("Редактировать")
+            dialog.set_cancel_button_text("Выйти")
+            dialog.set_additional_padding_to_buttons(0)
 
-        # Connecting to a second database and configuring the functions necessary
-        # for the correct operation of SQL queries
-        self.db_second_connection = sqlite3.connect(DB_PATHS["tabSecond"])
-        self.db_second_connection.create_function("LOWER", 1, sqlite_lower)
-        self.db_second_connection.create_function("UPPER", 1, sqlite_upper)
-        self.db_second_connection.create_collation("NOCASE", sqlite_ignore_case_collation)
-
-        # Connecting to a third database and configuring the functions necessary
-        # for the correct operation of SQL queries
-        self.db_third_connection = sqlite3.connect(DB_PATHS["tabThird"])
-        self.db_third_connection.create_function("LOWER", 1, sqlite_lower)
-        self.db_third_connection.create_function("UPPER", 1, sqlite_upper)
-        self.db_third_connection.create_collation("NOCASE", sqlite_ignore_case_collation)
+            # Getting answer from the user
+            result = dialog.exec()
+            if result:
+                pass
+            else:
+                sys.exit()
 
     # Functional configuration of PyQt5 components
     # Enabling event handling of button clicks, etc.
