@@ -11,7 +11,7 @@ from PyQt5.QtCore import Qt
 from ui_py.ui_error_dialog import Ui_Dialog
 from ui_py.ui_main import Ui_MainWindow
 import sqlite3
-from main_constants import DB_PATHS, ICON_PATH
+from main_constants import CONFIG, ICON_PATH
 
 
 # The standard Exception Hook allows you to output possible errors
@@ -179,8 +179,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     # Connecting to databases using the path specified in the main_constants.py
     # exec allows to automate this process
     def connect_to_dbs(self):
-        for db in DB_PATHS:
-            db_paths = DB_PATHS[db]
+        for db in CONFIG["db_paths"]:
+            db_paths = CONFIG["db_paths"][db]["basic"]
             order_name = db.split('tab')[1].lower()
             exception = None
             for path in db_paths:
