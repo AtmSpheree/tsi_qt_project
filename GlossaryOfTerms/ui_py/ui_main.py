@@ -64,5 +64,5 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "Glossary of Terms"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Глоссарий терминов"))
         self.labelSelectCourse.setText(_translate("MainWindow", "Выберите курс"))

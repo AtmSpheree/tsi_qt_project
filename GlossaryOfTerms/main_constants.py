@@ -23,6 +23,7 @@ DIRNAME = Path(os.path.abspath(os.curdir)).resolve()
 ICON_PATH = os.path.join(DIRNAME, "icon.png")
 EDITOR_ICON_PATH = os.path.join(DIRNAME, "assets/icons/editor_icon.png")
 ADMIN_PANEL_ICON_PATH = os.path.join(DIRNAME, "assets/icons/admin-panel_icon.png")
+DB_ICON_PATH = os.path.join(DIRNAME, "assets/icons/db_icon.png")
 
 
 # A function for creating a config in the local OS folder with default settings
